@@ -5,7 +5,7 @@ pFloat.convertFromInt = function(i) {
 	return parseInt(i)<<16;
 };
 pFloat.convertFromFloat = function(f) {
-	return parseInt(parseFloat(i)<<16);
+	return parseInt(parseFloat(f)<<16);
 };
 pFloat.convertToInt = function(i) {
 	return parseInt(i)>>16;
@@ -95,10 +95,10 @@ function SidSynthOsc(sidinstance, voicenum) {
 SidSynthOsc.prototype.precalc = function() {
 	this.pulse   = (this.v.pulse & 0xfff) << 16;
 	this.filter  = SidSynth.get_bit(this.sid.res_ftv,this.vnum);
-	this.attack  = attacks[this.v.ad >> 4];
-	this.decay   = releases[this.v.ad & 0xf];
+	this.attack  = this.sid.attacks[this.v.ad >> 4];
+	this.decay   = this.sid.releases[this.v.ad & 0xf];
 	this.sustain = this.v.sr & 0xf0;
-	this.release = releases[this.v.sr & 0xf];
+	this.release = this.sid.releases[this.v.sr & 0xf];
 	this.wave    = this.v.wave;
 	this.freq    = this.v.freq * this.sid.freq_mul;
 };
@@ -190,14 +190,14 @@ SidSynthOsc.prototype.sampleUpdate = function() {
 			break;
 		case 1:                          // Phase 1 : Decay
 			this.envval -= this.decay;
-# FIXME: both compare vals were cast as signed int. probably some effects to consider
+// FIXME: both compare vals were cast as signed int. probably some effects to consider
 			if (this.envval <= (this.sustain << 16)) {
 				this.envval   = this.sustain << 16;
 				this.envphase = 2;
 			}
 			break;
 		case 2:                          // Phase 2 : Sustain
-# FIXME: right compare val was cast as signed int. probably some effects to consider
+// FIXME: right compare val was cast as signed int. probably some effects to consider
 			if ( this.envval != (this.sustain << 16)) {
 				this.envphase = 1;
 			}
@@ -249,8 +249,8 @@ function SidSynth(mix_frequency) {
 	this.releases = new Array(16);
 	var i;
 	for ( i = 0; i < 16; i++) {
-		attacks[i]  = parseInt(0x1000000 / ( attackTimes[i] * mixfrq ) );
-		releases[i] = parseInt(0x1000000 / ( decayReleaseTimes[i] * mixfrq ) );
+		this.attacks[i]  = parseInt(0x1000000 / ( attackTimes[i] * this.mix_freq ) );
+		this.releases[i] = parseInt(0x1000000 / ( decayReleaseTimes[i] * this.mix_freq ) );
 	}
 
 	// Start core sid registers
@@ -286,6 +286,8 @@ function SidSynth(mix_frequency) {
 
 // generate count samples into buffer at offset
 SidSynth.prototype.generateIntoBuffer = function(count, buffer, offset) {
+	console.log("SidSynth.generateIntoBuffer (count: " + count + ", offset: " + offset + ")");
+
 	// FIXME: this could be done in one pass.
 	// zero out buffer area (why?)
 	for (var i = offset; i < offset + count * 2; i++) {
@@ -299,7 +301,7 @@ SidSynth.prototype.generateIntoBuffer = function(count, buffer, offset) {
 	// step 1: convert the not easily processable sid registers into some
 	//         more convenient and fast values (makes the thing much faster
 	//         if you process more than 1 sample value at once)
-	for ( v = 0; v < 3; i++) {
+	for ( v = 0; v < 3; v++) {
 		this.osc[v].precalc();
 	}
 	this.filter.precalc();
@@ -307,14 +309,15 @@ SidSynth.prototype.generateIntoBuffer = function(count, buffer, offset) {
 	// now render the buffer
 	var bp;		// buffer pointer
 	var endbp = count * 2 + offset;	// end-of-buffer pointer
-	for (bp = offset; bp < endbp; bp+=2) {
+
+	for (bp = offset; bp < endbp; bp += 2) {
 		var outo = 0;
 		var outf = 0;
 		
 		// step 2 : generate the two output signals (for filtered and non-
 		//          filtered) from the osc/eg sections
 
-		for ( v = 0; v < 3; i++) {
+		for ( v = 0; v < 3; v++) {
 			var thisosc = this.osc[v];
 			// oscillator sample activity in this method
 			thisosc.sampleUpdate();
@@ -324,12 +327,12 @@ SidSynth.prototype.generateIntoBuffer = function(count, buffer, offset) {
 			if ( v < 2 || this.filter.v3ena) {
 				if (thisosc.filter) {
 					//outf+=((float)osc[v].envval*(float)outv-0x8000000)/0x30000000;
-## FIXME?: cast to int
+// FIXME?: cast to int
 					//outf += ( ( (int)(outv-0x80) ) * osc[v].envval)>>22;
 					outf += ( ( thisosc.outv - 0x80 ) * thisosc.envval ) >> 22;
 				} else {
 					//outo+=((float)osc[v].envval*(float)outv-0x8000000)/0x30000000;
-## FIXME?: cast to int
+// FIXME?: cast to int
 					//outo+=(((int)(outv-0x80))*osc[v].envval)>>22;
 					outo += ( ( thisosc.outv - 0x80 ) * thisosc.envval ) >> 22;
 				}
@@ -365,11 +368,11 @@ SidSynth.prototype.generateIntoBuffer = function(count, buffer, offset) {
 		if (this.filter.b_ena) outf += pFloat.convertToInt(this.filter.b);
 		if (this.filter.h_ena) outf += pFloat.convertToInt(this.filter.h);
 
-## FIXME?: cast to signed short
+// FIXME?: cast to signed short
 		var final_sample = this.filter.vol * ( outo + outf );
-## FIXME: This will eventually pass through GenerateDigi, for now, it does not
+// FIXME: This will eventually pass through GenerateDigi, for now, it does not
 		//final_sample = GenerateDigi(final_sample);
-## FIXME?: cast to signed short
+// FIXME?: cast to signed short
 		buffer[bp] = final_sample;
 		buffer[bp+1] = final_sample;
 
@@ -392,37 +395,37 @@ SidSynth.prototype.poke = function(reg, val) {
 
 	switch (reg) {
 		case 0:
-			this.sid.v[voice].freq = (this.sid.v[voice].freq & 0xff00) + val;
+			this.v[voice].freq = (this.v[voice].freq & 0xff00) + val;
 			break;
 		case 1:
-			this.sid.v[voice].freq = (this.sid.v[voice].freq & 0xff) + (val << 8);
+			this.v[voice].freq = (this.v[voice].freq & 0xff) + (val << 8);
 			break;
 		case 2:
-			this.sid.v[voice].pulse = (this.sid.v[voice].pulse & 0xff00) + val;
+			this.v[voice].pulse = (this.v[voice].pulse & 0xff00) + val;
 			break;
 		case 3:
-			this.sid.v[voice].pulse = (this.sid.v[voice].pulse & 0xff) + (val << 8);
+			this.v[voice].pulse = (this.v[voice].pulse & 0xff) + (val << 8);
 			break;
 		case 4:
-			this.sid.v[voice].wave = val;
+			this.v[voice].wave = val;
 			break;
 		case 5:
-			this.sid.v[voice].ad = val;
+			this.v[voice].ad = val;
 			break;
 		case 6:
-			this.sid.v[voice].sr = val;
+			this.v[voice].sr = val;
 			break;
 		case 21:
-			this.sid.ffreqlo = val;
+			this.ffreqlo = val;
 			break;
 		case 22:
-			this.sid.ffreqhi = val;
+			this.ffreqhi = val;
 			break;
 		case 23:
-			this.sid.res_ftv = val;
+			this.res_ftv = val;
 			break;
 		case 24:
-			this.sid.ftp_vol = val;
+			this.ftp_vol = val;
 			break;
 	}
 };

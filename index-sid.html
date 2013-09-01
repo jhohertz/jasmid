@@ -1,0 +1,44 @@
+<!DOCTYPE HTML>
+<html>
+	<head>
+		<script src="stream.js"></script>
+		<script src="siddmpfile.js"></script>
+		<script src="siddmpplayer.js"></script>
+		<script src="sidsynth.js"></script>
+		<script src="audio.js"></script>
+		<script>
+			function loadRemote(path, callback) {
+				var fetch = new XMLHttpRequest();
+				fetch.open('GET', path);
+				fetch.overrideMimeType("text/plain; charset=x-user-defined");
+				fetch.onreadystatechange = function() {
+					if(this.readyState == 4 && this.status == 200) {
+						/* munge response into a binary string */
+						var t = this.responseText || "" ;
+						var ff = [];
+						var mx = t.length;
+						var scc= String.fromCharCode;
+						for (var z = 0; z < mx; z++) {
+							ff[z] = scc(t.charCodeAt(z) & 255);
+						}
+						callback(ff.join(""));
+					}
+				}
+				fetch.send();
+			}
+			
+			function play(file) {
+				loadRemote(file, function(data) {
+					sidDmpFile = SidDmpFile(data);
+					synth = new SidSynth(44100);
+					sidDmpPlayer = SidDmpPlayer(sidDmpFile, synth);
+					audio = AudioPlayer(sidDmpPlayer);
+				})
+			}
+		</script>
+	</head>
+	<body>
+		<a href="javascript:void(play('sid/dmp/Autumn.dmp'))">Autumn.dmp</a> |
+		<a href="javascript:void(play('sid/dmp/Axelf.dmp'))">Axelf.dmp</a>
+	</body>
+</html>
