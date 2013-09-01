@@ -2,16 +2,16 @@
 // start pFloat
 function pFloat () {};
 pFloat.convertFromInt = function(i) {
-	return parseInt(i)<<16;
+	return (parseInt(i)<<16) & 0xffffffff;
 };
 pFloat.convertFromFloat = function(f) {
-	return parseInt(parseFloat(f)<<16);
+	return parseInt(parseFloat(f)<<16) & 0xffffffff;
 };
 pFloat.convertToInt = function(i) {
 	return parseInt(i)>>16;
 };
 pFloat.multiply = function(a, b) {
-	return (parseInt(a)>>8)*(parseInt(b)>>8);
+	return ((parseInt(a)>>8)*(parseInt(b)>>8)) & 0xffffffff;
 };
 // end pFloat;
 
@@ -93,6 +93,7 @@ function SidSynthOsc(sidinstance, voicenum) {
 
 // Pre-calc values common to a sample set
 SidSynthOsc.prototype.precalc = function() {
+
 	this.pulse   = (this.v.pulse & 0xfff) << 16;
 	this.filter  = SidSynth.get_bit(this.sid.res_ftv,this.vnum);
 	this.attack  = this.sid.attacks[this.v.ad >> 4];
@@ -130,7 +131,8 @@ SidSynthOsc.prototype.sampleUpdate = function() {
 		this.triout ^= 0xff;
 	}
 	this.sawout = (this.counter >> 20) & 0xff;
-	this.plsout = ((this.counter > this.pulse) - 1) && 0xff;
+	//this.plsout = ((this.counter > this.pulse) - 1) && 0xff;
+	this.plsout = (this.counter > this.pulse) ? 0xff : 0;
 
 	// generate noise waveform exactly as the SID does.
 	if ( this.noisepos != ( this.counter >> 23 ) ) {
@@ -190,15 +192,13 @@ SidSynthOsc.prototype.sampleUpdate = function() {
 			break;
 		case 1:                          // Phase 1 : Decay
 			this.envval -= this.decay;
-// FIXME: both compare vals were cast as signed int. probably some effects to consider
-			if (this.envval <= (this.sustain << 16)) {
+			if (SidSynth.getAsSignedInt32(this.envval) <= SidSynth.getAsSignedInt32(this.sustain << 16)) {
 				this.envval   = this.sustain << 16;
 				this.envphase = 2;
 			}
 			break;
 		case 2:                          // Phase 2 : Sustain
-// FIXME: right compare val was cast as signed int. probably some effects to consider
-			if ( this.envval != (this.sustain << 16)) {
+			if (SidSynth.getAsSignedInt32(this.envval) != SidSynth.getAsSignedInt32(this.sustain << 16)) {
 				this.envphase = 1;
 			}
 			// :) yes, thats exactly how the SID works. and maybe
@@ -286,7 +286,7 @@ function SidSynth(mix_frequency) {
 
 // generate count samples into buffer at offset
 SidSynth.prototype.generateIntoBuffer = function(count, buffer, offset) {
-	console.log("SidSynth.generateIntoBuffer (count: " + count + ", offset: " + offset + ")");
+	//console.log("SidSynth.generateIntoBuffer (count: " + count + ", offset: " + offset + ")");
 
 	// FIXME: this could be done in one pass.
 	// zero out buffer area (why?)
@@ -435,4 +435,10 @@ SidSynth.get_bit = function(val, bit) {
 	return ((val >> bit) & 1);
 };
 
+
+SidSynth.getAsSignedInt32 = function(val) {
+	val &= 0xFFFFFFFF;
+	if (val > 2147483647) result -= 2147483648;
+	return val;
+};
 
