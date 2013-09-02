@@ -2,16 +2,16 @@
 // start pFloat
 function pFloat () {};
 pFloat.convertFromInt = function(i) {
-	return (parseInt(i)<<16) & 0xffffffff;
+	return (i<<16);
 };
 pFloat.convertFromFloat = function(f) {
-	return parseInt(parseFloat(f) * 65536) & 0xffffffff;
+	return parseInt(parseFloat(f) * 65536);
 };
 pFloat.convertToInt = function(i) {
-	return (parseInt(i)>>16) & 0xffffffff;
+	return (i>>16);
 };
 pFloat.multiply = function(a, b) {
-	return ((parseInt(a)>>8)*(parseInt(b)>>8)) & 0xffffffff;
+	return ((a>>8)*(b>>8));
 };
 // end pFloat;
 
@@ -131,8 +131,10 @@ SidSynthOsc.prototype.sampleUpdate = function() {
 		this.triout ^= 0xff;
 	}
 	this.sawout = (this.counter >> 20) & 0xff;
-	//this.plsout = ((this.counter > this.pulse) - 1) && 0xff;
-	this.plsout = (this.counter > this.pulse) ? 0xff : 0;
+
+	//original: this.plsout = ((this.counter > this.pulse) - 1) && 0xff;
+	//this.plsout = (this.counter > this.pulse) ? 0xff : 0;
+	this.plsout = (this.counter > this.pulse) ? 0 : 0xff;
 
 	// generate noise waveform exactly as the SID does.
 	if ( this.noisepos != ( this.counter >> 23 ) ) {
@@ -351,7 +353,6 @@ SidSynth.prototype.generateIntoBuffer = function(count, buffer, offset) {
 		// sound of the 6581 is uuh too hard to achieve :)
 
 		//filter.h = outf - filter.b*filter.rez - filter.l;
-		//filter.h = pfloat_ConvertFromInt(outf) - pfloat_Multiply(filter.b, filter.rez) - filter.l;
 		this.filter.h = pFloat.convertFromInt(outf) - (this.filter.b >> 8) * this.filter.rez - this.filter.l;
 
 		//filter.b += filter.freq * filter.h;
@@ -367,9 +368,11 @@ SidSynth.prototype.generateIntoBuffer = function(count, buffer, offset) {
 		if (this.filter.h_ena) outf += pFloat.convertToInt(this.filter.h);
 
 		//var final_sample = SidSynth.getAsSignedInt16(this.filter.vol * ( outo + outf ));
-		var final_sample = (this.filter.vol * ( outo + outf ));
+		//var final_sample = (this.filter.vol * ( outo + outf ));
+		var final_sample = parseFloat(this.filter.vol * ( outo + outf )) / 32768;
 // FIXME: This will eventually pass through GenerateDigi, for now, it does not
 		//final_sample = GenerateDigi(final_sample);
+		//console.log("final: " + final_sample);
 		buffer[bp] = final_sample;
 		buffer[bp+1] = final_sample;
 

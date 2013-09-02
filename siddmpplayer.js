@@ -52,7 +52,7 @@ function SidDmpPlayer(sidDmpFile, synth) {
 	
 	// generator
 	function generate(samples) {
-		console.log("Generating " + samples + " samples (" + samplesToNextFrame + " to next frame)");
+		//console.log("Generating " + samples + " samples (" + samplesToNextFrame + " to next frame)");
 		var data = new Array(samples*2);
 		var samplesRemaining = samples;
 		var dataOffset = 0;
@@ -61,7 +61,7 @@ function SidDmpPlayer(sidDmpFile, synth) {
 			if (samplesToNextFrame != null && samplesToNextFrame <= samplesRemaining) {
 				/* generate samplesToNextFrame samples, process frame and repeat */
 				var samplesToGenerate = Math.ceil(samplesToNextFrame);
-				console.log("next frame: " + samplesToNextFrame + ", remaining: " + samplesRemaining + ", offset: " + dataOffset + ", generate: " + samplesToGenerate);
+				//console.log("next frame: " + samplesToNextFrame + ", remaining: " + samplesRemaining + ", offset: " + dataOffset + ", generate: " + samplesToGenerate);
 				if (samplesToGenerate > 0) {
 					synth.generateIntoBuffer(samplesToGenerate, data, dataOffset);
 					dataOffset += samplesToGenerate * 2;
@@ -79,6 +79,7 @@ function SidDmpPlayer(sidDmpFile, synth) {
 				break;
 			}
 		}
+		//console.log("data: ", data);
 		return data;
 	}
 
