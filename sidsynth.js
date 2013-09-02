@@ -8,7 +8,7 @@ pFloat.convertFromFloat = function(f) {
 	return parseInt(parseFloat(f)<<16) & 0xffffffff;
 };
 pFloat.convertToInt = function(i) {
-	return parseInt(i)>>16;
+	return (parseInt(i)>>16) & 0xffffffff;
 };
 pFloat.multiply = function(a, b) {
 	return ((parseInt(a)>>8)*(parseInt(b)>>8)) & 0xffffffff;
@@ -192,13 +192,13 @@ SidSynthOsc.prototype.sampleUpdate = function() {
 			break;
 		case 1:                          // Phase 1 : Decay
 			this.envval -= this.decay;
-			if (SidSynth.getAsSignedInt32(this.envval) <= SidSynth.getAsSignedInt32(this.sustain << 16)) {
+			if (this.envval <= (this.sustain << 16)) {
 				this.envval   = this.sustain << 16;
 				this.envphase = 2;
 			}
 			break;
 		case 2:                          // Phase 2 : Sustain
-			if (SidSynth.getAsSignedInt32(this.envval) != SidSynth.getAsSignedInt32(this.sustain << 16)) {
+			if (this.envval != (this.sustain << 16)) {
 				this.envphase = 1;
 			}
 			// :) yes, thats exactly how the SID works. and maybe
@@ -327,14 +327,12 @@ SidSynth.prototype.generateIntoBuffer = function(count, buffer, offset) {
 			if ( v < 2 || this.filter.v3ena) {
 				if (thisosc.filter) {
 					//outf+=((float)osc[v].envval*(float)outv-0x8000000)/0x30000000;
-// FIXME?: cast to int
 					//outf += ( ( (int)(outv-0x80) ) * osc[v].envval)>>22;
-					outf += ( ( thisosc.outv - 0x80 ) * thisosc.envval ) >> 22;
+					outf += ( (thisosc.outv - 0x80 ) * SidSynth.getAsSignedInt32(thisosc.envval)) >> 22;
 				} else {
 					//outo+=((float)osc[v].envval*(float)outv-0x8000000)/0x30000000;
-// FIXME?: cast to int
 					//outo+=(((int)(outv-0x80))*osc[v].envval)>>22;
-					outo += ( ( thisosc.outv - 0x80 ) * thisosc.envval ) >> 22;
+					outo += ( ( thisosc.outv - 0x80 ) * SidSynth.getAsSignedInt32(thisosc.envval)) >> 22;
 				}
 			}
 
@@ -368,11 +366,10 @@ SidSynth.prototype.generateIntoBuffer = function(count, buffer, offset) {
 		if (this.filter.b_ena) outf += pFloat.convertToInt(this.filter.b);
 		if (this.filter.h_ena) outf += pFloat.convertToInt(this.filter.h);
 
-// FIXME?: cast to signed short
-		var final_sample = this.filter.vol * ( outo + outf );
+		//var final_sample = SidSynth.getAsSignedInt16(this.filter.vol * ( outo + outf ));
+		var final_sample = (this.filter.vol * ( outo + outf ));
 // FIXME: This will eventually pass through GenerateDigi, for now, it does not
 		//final_sample = GenerateDigi(final_sample);
-// FIXME?: cast to signed short
 		buffer[bp] = final_sample;
 		buffer[bp+1] = final_sample;
 
@@ -435,10 +432,14 @@ SidSynth.get_bit = function(val, bit) {
 	return ((val >> bit) & 1);
 };
 
-
 SidSynth.getAsSignedInt32 = function(val) {
 	val &= 0xFFFFFFFF;
-	if (val > 2147483647) result -= 2147483648;
+	if (val > 2147483647) val -= 2147483648;
 	return val;
 };
 
+SidSynth.getAsSignedInt16 = function(val) {
+	val &= 0xFFFF;
+	if (val > 32767) val -= 32768;
+	return val;
+};
