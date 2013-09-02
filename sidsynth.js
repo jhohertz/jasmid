@@ -5,7 +5,7 @@ pFloat.convertFromInt = function(i) {
 	return (parseInt(i)<<16) & 0xffffffff;
 };
 pFloat.convertFromFloat = function(f) {
-	return parseInt(parseFloat(f)<<16) & 0xffffffff;
+	return parseInt(parseFloat(f) * 65536) & 0xffffffff;
 };
 pFloat.convertToInt = function(i) {
 	return (parseInt(i)>>16) & 0xffffffff;
@@ -328,11 +328,11 @@ SidSynth.prototype.generateIntoBuffer = function(count, buffer, offset) {
 				if (thisosc.filter) {
 					//outf+=((float)osc[v].envval*(float)outv-0x8000000)/0x30000000;
 					//outf += ( ( (int)(outv-0x80) ) * osc[v].envval)>>22;
-					outf += ( (thisosc.outv - 0x80 ) * SidSynth.getAsSignedInt32(thisosc.envval)) >> 22;
+					outf += ( (thisosc.outv - 0x80 ) * thisosc.envval) >> 22;
 				} else {
 					//outo+=((float)osc[v].envval*(float)outv-0x8000000)/0x30000000;
 					//outo+=(((int)(outv-0x80))*osc[v].envval)>>22;
-					outo += ( ( thisosc.outv - 0x80 ) * SidSynth.getAsSignedInt32(thisosc.envval)) >> 22;
+					outo += ( ( thisosc.outv - 0x80 ) * thisosc.envval) >> 22;
 				}
 			}
 
