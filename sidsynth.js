@@ -229,7 +229,14 @@ SidSynthOsc.prototype.sampleUpdate = function() {
 // Main SidSynth Object
 
 // Constructor
-function SidSynth(mix_frequency) {
+function SidSynth(mix_frequency, memory) {
+
+	if(memory) {
+		this.mem = memory;
+	} else {
+		this.mem = null;
+	}
+
 	this.mix_freq = mix_frequency;	
 	this.freq_mul = 15872000 / this.mix_freq;
 	this.filt_mul = pFloat.convertFromFloat(21.5332031) / this.mix_freq;
@@ -301,6 +308,10 @@ function SidSynth(mix_frequency) {
 	this.sample_order = 0;
 	this.sample_nibble = 0;
 
+	// converted from statics in generateDigi
+	this.sample = 0;
+	this.last_sample = 0;
+
 
 };
 
@@ -312,7 +323,7 @@ function SidSynth(mix_frequency) {
 SidSynth.prototype.generateIntoBuffer = function(count, buffer, offset) {
 	//console.log("SidSynth.generateIntoBuffer (count: " + count + ", offset: " + offset + ")");
 
-	// FIXME: this could be done in one pass.
+	// FIXME: this could be done in one pass. (No?)
 	// zero out buffer area (why?)
 	for (var i = offset; i < offset + count * 2; i++) {
 		buffer[i] = 0;
@@ -389,18 +400,69 @@ SidSynth.prototype.generateIntoBuffer = function(count, buffer, offset) {
 		if (this.filter.b_ena) outf += pFloat.convertToInt(this.filter.b);
 		if (this.filter.h_ena) outf += pFloat.convertToInt(this.filter.h);
 
-		//var final_sample = SidSynth.getAsSignedInt16(this.filter.vol * ( outo + outf ));
 		//var final_sample = (this.filter.vol * ( outo + outf ));
-		var final_sample = parseFloat(this.filter.vol * ( outo + outf )) / 32768;
-// FIXME: This will eventually pass through GenerateDigi, for now, it does not
-		//final_sample = GenerateDigi(final_sample);
-		//console.log("final: " + final_sample);
+		var final_sample = parseFloat(this.generateDigi(this.filter.vol * ( outo + outf ))) / 32768;
 		buffer[bp] = final_sample;
 		buffer[bp+1] = final_sample;
 
 	}
 };
 
+SidSynth.prototype.generateDigi = function(sIn) {
+
+	if ((!this.sample_active) || (this.mem == null)) return(sIn);
+
+	if ((this.sample_position < this.sample_end) && (this.sample_position >= this.sample_start)) {
+		//Interpolation routine
+		//float a = (float)fracPos/(float)mixing_frequency;
+		//float b = 1-a;
+		//sIn += a*sample + b*last_sample;
+
+		sIn += this.sample;
+
+		this.fracPos += 985248 / this.sample_period;
+
+		if (this.fracPos > this.mix_freq) {
+			this.fracPos %= this.mix_freq;
+
+			this.last_sample = this.sample;
+
+			if (this.sample_order == 0) {
+				this.sample_nibble++;
+				if (this.sample_nibble == 2) {
+					this.sample_nibble = 0;
+					this.sample_position++;
+				}
+			} else {
+				this.sample_nibble--;
+				if (this.sample_nibble < 0) {
+					this.sample_nibble = 1;
+					this.sample_position++;
+				}
+			}
+			if (this.sample_repeats) {
+				if (this.sample_position > this.sample_end) {
+					this.sample_repeats--;
+					this.sample_position = this.sample_repeat_start;
+				} else {
+					this.sample_active = 0;
+				}
+			}
+
+			this.sample = this.mem[this.sample_position & 0xffff];
+			if (this.sample_nibble == 1) {
+				this.sample = (this.sample & 0xf0) >> 4;
+			} else {
+				this.sample = this.sample & 0x0f;
+			}
+
+			this.sample -= 7;
+			this.sample <<= 10;
+		}
+	}
+
+	return (sIn);
+};
 
 SidSynth.prototype.generate = function(samples) {
 	var data = new Array(samples*2);
@@ -454,6 +516,7 @@ SidSynth.prototype.poke = function(reg, val) {
 
 SidSynth.prototype.pokeDigi = function(addr, value) {
 
+	// FIXME: Should be a switch/case block
 	// Start-Hi
 	if (addr == 0xd41f) {
 		this.internal_start = (this.internal_start & 0x00ff) | (value << 8);
@@ -541,14 +604,3 @@ SidSynth.get_bit = function(val, bit) {
 	return ((val >> bit) & 1);
 };
 
-SidSynth.getAsSignedInt32 = function(val) {
-	val &= 0xFFFFFFFF;
-	if (val > 2147483647) val -= 2147483648;
-	return val;
-};
-
-SidSynth.getAsSignedInt16 = function(val) {
-	val &= 0xFFFF;
-	if (val > 32767) val -= 32768;
-	return val;
-};
