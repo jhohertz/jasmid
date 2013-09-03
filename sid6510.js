@@ -237,7 +237,7 @@ Sid6510.prototype.branch = function(flag) {
 	// signed char dist;
 	// dist=(signed char)getaddr(imm);
 	var dist = this.getaddr(Sid6510.mode.imm);
-	if (dist > 127) dist -= 128;		// maked signed
+	if (dist & 0x80) { dist = 0 - ((~dist & 0xff) + 1) }        // maked signed
 	this.wval= this.pc + dist;
 	if (flag) {
 		this.cycles += ((this.pc & 0x100) != (this.wval & 0x100)) ? 2 : 1;
