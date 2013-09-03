@@ -278,9 +278,7 @@ Sid6510.prototype.cpuParse = function() {
 			this.a = this.wval & 0xff;
 			this.setflags(Sid6510.flag.Z, !this.a);
 			this.setflags(Sid6510.flag.N, this.a & 0x80);
-			// FIXME: this probably exploits some C-ism we need to address
-			// Surprisingly... this might actually work as-is
-			this.setflags(Sid6510.flag.V, (!!(this.p & Sid6510.flag.C)) ^ (!!(this.p & Sid6510.flag.N)));
+			this.setflags(Sid6510.flag.V, ((this.p & Sid6510.flag.C) ? 1 : 0) ^ ((this.p & Sid6510.flag.N) ? 1 : 0));
 			break;
 		case Sid6510.inst.and:
 			this.bval = this.getaddr(addr);
@@ -501,17 +499,18 @@ Sid6510.prototype.cpuParse = function() {
 			break;
 		case Sid6510.inst.rol:
 			this.bval = this.getaddr(addr);
-			c = !!(this.p & Sid6510.flag.C);
+			c = (this.p & Sid6510.flag.C) ? 1 : 0;
 			this.setflags(Sid6510.flag.C, this.bval & 0x80);
 			this.bval <<= 1;
 			this.bval |= c;
+			this.bval &= 0xff;
 			this.setaddr(addr, this.bval);
 			this.setflags(Sid6510.flag.N, this.bval & 0x80);
 			this.setflags(Sid6510.flag.Z, !this.bval);
 			break;
 		case Sid6510.inst.ror:
 			this.bval = this.getaddr(addr);
-			c = !!(this.p & Sid6510.flag.C);
+			c = (this.p & Sid6510.flag.C) ? 1 : 0;
 			this.setflags(Sid6510.flag.C, this.bval & 1);
 			this.bval >>= 1;
 			this.bval |= 128 * c;
@@ -538,7 +537,7 @@ Sid6510.prototype.cpuParse = function() {
 			this.a = this.wval & 0xff;
 			this.setflags(Sid6510.flag.Z, !this.a);
 			this.setflags(Sid6510.flag.N, this.a > 127);
-			this.setflags(Sid6510.flag.V, (!!(this.p & Sid6510.flag.C)) ^ (!!(this.p & Sid6510.flag.N)));
+			this.setflags(Sid6510.flag.V, ((this.p & Sid6510.flag.C) ? 1 : 0) ^ ((this.p & Sid6510.flag.N) ? 1 : 0));
 			break;
 		case Sid6510.inst.sec:
 			this.cycles += 2;
