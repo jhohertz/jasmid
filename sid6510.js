@@ -405,6 +405,7 @@ Sid6510.prototype.cpuParse = function() {
 		case Sid6510.inst.inc:
 			this.bval = this.getaddr(addr);
 			this.bval++;
+			if(this.bval > 255) this.bval -= 256;		// Simulate 8 bit rollover
 			this.setaddr(addr, this.bval);
 			this.setflags(Sid6510.flag.Z, !this.bval);
 			this.setflags(Sid6510.flag.N, this.bval & 0x80);
@@ -412,12 +413,14 @@ Sid6510.prototype.cpuParse = function() {
 		case Sid6510.inst.inx:
 			this.cycles += 2;
 			this.x++;
+			if(this.x > 255) this.x -= 256;		// Simulate 8 bit rollover
 			this.setflags(Sid6510.flag.Z, !this.x);
 			this.setflags(Sid6510.flag.N, this.x & 0x80);
 			break;
 		case Sid6510.inst.iny:
 			this.cycles += 2;
 			this.y++;
+			if(this.y > 255) this.y -= 256;		// Simulate 8 bit rollover
 			this.setflags(Sid6510.flag.Z, !this.y);
 			this.setflags(Sid6510.flag.N, this.y & 0x80);
 			break;
