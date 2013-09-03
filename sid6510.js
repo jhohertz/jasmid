@@ -279,6 +279,7 @@ Sid6510.prototype.cpuParse = function() {
 			this.setflags(Sid6510.flag.Z, !this.a);
 			this.setflags(Sid6510.flag.N, this.a & 0x80);
 			// FIXME: this probably exploits some C-ism we need to address
+			// Surprisingly... this might actually work as-is
 			this.setflags(Sid6510.flag.V, (!!(this.p & Sid6510.flag.C)) ^ (!!(this.p & Sid6510.flag.N)));
 			break;
 		case Sid6510.inst.and:
@@ -352,6 +353,7 @@ Sid6510.prototype.cpuParse = function() {
 		case Sid6510.inst.cmp:
 			this.bval = this.getaddr(addr);
 			this.wval = this.a - this.bval;
+			if(this.wval < 0) this.wval += 256;		// Simulate 8 bit rollover
 			this.setflags(Sid6510.flag.Z, !this.wval);
 			this.setflags(Sid6510.flag.N, this.wval & 0x80);
 			this.setflags(Sid6510.flag.C, this.a >= this.bval);
