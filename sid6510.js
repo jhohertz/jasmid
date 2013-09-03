@@ -217,7 +217,7 @@ Sid6510.prototype.setflags = function(flag, cond) {
 	if (cond) {
 		this.p |= flag;
 	} else {
-		this.p &= ~flag;
+		this.p &= (~flag) & 0xff;
 	}
 };
 
