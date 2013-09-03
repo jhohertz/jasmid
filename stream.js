@@ -2,6 +2,10 @@
 function Stream(str) {
 	var position = 0;
 	
+	function seek(newpos) {
+		position = newpos;
+	}
+
 	function read(length) {
 		var result = str.substr(position, length);
 		position += length;
@@ -60,6 +64,7 @@ function Stream(str) {
 	
 	return {
 		'eof': eof,
+		'seek': seek,
 		'read': read,
 		'readInt32': readInt32,
 		'readInt16': readInt16,
