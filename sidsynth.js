@@ -280,6 +280,28 @@ function SidSynth(mix_frequency) {
 	}
 	this.filter = new SidSynthFilter(this);
 
+	// internal values used to handle "Digi" sample handling
+	this.internal_period = 0;
+	this.internal_order = 0;
+	this.internal_start = 0;
+	this.internal_end = 0;
+	this.internal_add = 0;
+	this.internal_repeat_times = 0;
+	this.internal_repeat_start = 0;
+
+	// also related to digi handling
+	this.sample_active = 0;
+	this.sample_position = 0;
+	this.sample_start = 0;
+	this.sample_end = 0;
+	this.sample_repeat_start = 0;
+	this.fracPos = 0;         /* Fractal position of sample */
+	this.sample_period = 0;
+	this.sample_repeats = 0;
+	this.sample_order = 0;
+	this.sample_nibble = 0;
+
+
 };
 
 //SidSynth.SOMEPROP = const type val;
@@ -429,6 +451,90 @@ SidSynth.prototype.poke = function(reg, val) {
 			break;
 	}
 };
+
+SidSynth.prototype.pokeDigi = function(addr, value) {
+
+	// Start-Hi
+	if (addr == 0xd41f) {
+		this.internal_start = (this.internal_start & 0x00ff) | (value << 8);
+	}
+
+	// Start-Lo
+	if (addr == 0xd41e) {
+		this.internal_start = (this.internal_start & 0xff00) | (value);
+	}
+
+	// Repeat-Hi
+	if (addr == 0xd47f) {
+		this.internal_repeat_start = (this.internal_repeat_start & 0x00ff) | (value << 8);
+	}
+
+	// Repeat-Lo
+	if (addr == 0xd47e) {
+		this.internal_repeat_start = (this.internal_repeat_start & 0xff00) | (value);
+	}
+
+	// End-Hi
+	if (addr == 0xd43e) {
+		this.internal_end = (this.internal_end & 0x00ff) | (value << 8);
+	}
+
+	// End-Lo
+	if (addr == 0xd43d) {
+		this.internal_end = (this.internal_end & 0xff00) | (value);
+	}
+
+	// Loop-Size
+	if (addr == 0xd43f) {
+		this.internal_repeat_times = value;
+	}
+
+	// Period-Hi
+	if (addr == 0xd45e) {
+		this.internal_period = (this.internal_period & 0x00ff) | (value << 8);
+	}
+
+	// Period-Lo
+	if (addr == 0xd45d) {
+		this.internal_period = (this.internal_period & 0xff00) | (value);
+	}
+
+	// Sample Order
+	if (addr == 0xd47d) {
+		this.internal_order = value;
+	}
+
+	// Sample Add
+	if (addr == 0xd45f) {
+		this.internal_add = value;
+	}
+
+	// Start-Sampling
+	if (addr == 0xd41d)
+	{
+		this.sample_repeats = this.internal_repeat_times;
+		this.sample_position = this.internal_start;
+		this.sample_start = this.internal_start;
+		this.sample_end = this.internal_end;
+		this.sample_repeat_start = this.internal_repeat_start;
+		this.sample_period = this.internal_period;
+		this.sample_order = this.internal_order;
+		switch (value)
+		{
+			case 0xfd:
+				this.sample_active = 0;
+				break;
+			case 0xfe:
+			case 0xff:
+				this.sample_active = 1;
+				break;
+			default:
+				return;
+		}
+	}
+
+};
+
 
 // val(dword), bit(byte), returns byte (1 or 0)
 SidSynth.get_bit = function(val, bit) {
