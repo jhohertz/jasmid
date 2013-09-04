@@ -233,8 +233,10 @@ Sid6510.prototype.pop = function() {
 
 Sid6510.prototype.branch = function(flag) {
 	var dist = this.getaddr(Sid6510.mode.imm);
-	if (dist & 0x80) { dist = 0 - ((~dist & 0xff) + 1) }        // maked signed
+	if (dist & 0x80) { dist = 0 - ((~dist & 0xff) + 1) }        // make signed
 	this.wval= this.pc + dist;
+	if (this.wval < 0) this.wval += 65536			    // FIXME: added boundary checks to wrap around. Not sure this is whats needed
+	this.wval &= 0xffff
 	if (flag) {
 		this.cycles += ((this.pc & 0x100) != (this.wval & 0x100)) ? 2 : 1;
 		this.pc = this.wval;
