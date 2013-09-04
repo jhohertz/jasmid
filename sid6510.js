@@ -329,6 +329,7 @@ Sid6510.prototype.cpuParse = function() {
 			this.push(this.pc >> 8);
 			this.push(this.p);
 			this.setflags(Sid6510.flag.B, 1);
+			// FIXME: should Z be set as well?
 			this.pc = this.getmem(0xfffe);
 			this.cycles += 7;
 			break;
@@ -351,7 +352,7 @@ Sid6510.prototype.cpuParse = function() {
 		case Sid6510.inst.cmp:
 			this.bval = this.getaddr(addr);
 			this.wval = this.a - this.bval;
-			if(this.wval < 0) this.wval += 256;		// Simulate 8 bit rollover
+			if(this.wval < 0) this.wval += 256;		// Simulate 8 bit rollover not really needed?
 			this.setflags(Sid6510.flag.Z, !this.wval);
 			this.setflags(Sid6510.flag.N, this.wval & 0x80);
 			this.setflags(Sid6510.flag.C, this.a >= this.bval);
@@ -359,7 +360,7 @@ Sid6510.prototype.cpuParse = function() {
 		case Sid6510.inst.cpx:
 			this.bval = this.getaddr(addr);
 			this.wval = this.x - this.bval;
-			if(this.wval < 0) this.wval += 256;		// Simulate 8 bit rollover
+			if(this.wval < 0) this.wval += 256;		// Simulate 8 bit rollover not really needed?
 			this.setflags(Sid6510.flag.Z, !this.wval);
 			this.setflags(Sid6510.flag.N, this.wval & 0x80);
 			this.setflags(Sid6510.flag.C, this.a >= this.bval);
@@ -367,7 +368,7 @@ Sid6510.prototype.cpuParse = function() {
 		case Sid6510.inst.cpy:
 			this.bval = this.getaddr(addr);
 			this.wval = this.y - this.bval;
-			if(this.wval < 0) this.wval += 256;		// Simulate 8 bit rollover
+			if(this.wval < 0) this.wval += 256;		// Simulate 8 bit rollover not really needed?
 			this.setflags(Sid6510.flag.Z, !this.wval);
 			this.setflags(Sid6510.flag.N, this.wval & 0x80);
 			this.setflags(Sid6510.flag.C, this.a >= this.bval);
@@ -439,7 +440,7 @@ Sid6510.prototype.cpuParse = function() {
 			break;
 		case Sid6510.inst.jsr:
 			this.cycles += 6;
-			this.push((this.pc + 2));
+			this.push((this.pc + 2) & 0xff);
 			this.push((this.pc + 2) >> 8);
 			this.wval = this.getmem(this.pc++);
 			this.wval |= 256 * this.getmem(this.pc++);
@@ -461,7 +462,6 @@ Sid6510.prototype.cpuParse = function() {
 			this.setflags(Sid6510.flag.N, this.y & 0x80);
 			break;
 		case Sid6510.inst.lsr:
-			//bval=wval=getaddr(addr);
 			this.bval = this.getaddr(addr);
 			this.wval = this.bval;
 			this.wval >>= 1;
@@ -510,10 +510,10 @@ Sid6510.prototype.cpuParse = function() {
 			break;
 		case Sid6510.inst.ror:
 			this.bval = this.getaddr(addr);
-			c = (this.p & Sid6510.flag.C) ? 1 : 0;
+			c = (this.p & Sid6510.flag.C) ? 128 : 0;
 			this.setflags(Sid6510.flag.C, this.bval & 1);
 			this.bval >>= 1;
-			this.bval |= 128 * c;
+			this.bval |= c;
 			this.setaddr(addr, this.bval);
 			this.setflags(Sid6510.flag.N, this.bval & 0x80);
 			this.setflags(Sid6510.flag.Z, !this.bval);
@@ -658,6 +658,7 @@ Sid6510.opcodes = new Array(
 	[Sid6510.inst.ora, Sid6510.mode.abs],							// 0x0d
 	[Sid6510.inst.asl, Sid6510.mode.abs],							// 0x0e
 	[Sid6510.inst.xxx, Sid6510.mode.xxx],							// 0x0f
+
 	[Sid6510.inst.bpl, Sid6510.mode.rel],							// 0x10
 	[Sid6510.inst.ora, Sid6510.mode.indy],							// 0x11
 	[Sid6510.inst.xxx, Sid6510.mode.xxx],							// 0x12
@@ -674,6 +675,7 @@ Sid6510.opcodes = new Array(
 	[Sid6510.inst.ora, Sid6510.mode.absx],							// 0x1d
 	[Sid6510.inst.asl, Sid6510.mode.absx],							// 0x1e
 	[Sid6510.inst.xxx, Sid6510.mode.xxx],							// 0x1f
+
 	[Sid6510.inst.jsr, Sid6510.mode.abs],							// 0x20
 	[Sid6510.inst.and, Sid6510.mode.indx],							// 0x21
 	[Sid6510.inst.xxx, Sid6510.mode.xxx],							// 0x22
@@ -690,6 +692,7 @@ Sid6510.opcodes = new Array(
 	[Sid6510.inst.and, Sid6510.mode.abs],							// 0x2d
 	[Sid6510.inst.rol, Sid6510.mode.abs],							// 0x2e
 	[Sid6510.inst.xxx, Sid6510.mode.xxx],							// 0x2f
+
 	[Sid6510.inst.bmi, Sid6510.mode.rel],							// 0x30
 	[Sid6510.inst.and, Sid6510.mode.indy],							// 0x31
 	[Sid6510.inst.xxx, Sid6510.mode.xxx],							// 0x32
@@ -706,6 +709,7 @@ Sid6510.opcodes = new Array(
 	[Sid6510.inst.and, Sid6510.mode.absx],							// 0x3d
 	[Sid6510.inst.rol, Sid6510.mode.absx],							// 0x3e
 	[Sid6510.inst.xxx, Sid6510.mode.xxx],							// 0x3f
+
 	[Sid6510.inst.rti, Sid6510.mode.imp],							// 0x40
 	[Sid6510.inst.eor, Sid6510.mode.indx],							// 0x41
 	[Sid6510.inst.xxx, Sid6510.mode.xxx],							// 0x42
@@ -722,6 +726,7 @@ Sid6510.opcodes = new Array(
 	[Sid6510.inst.eor, Sid6510.mode.abs],							// 0x4d
 	[Sid6510.inst.lsr, Sid6510.mode.abs],							// 0x4e
 	[Sid6510.inst.xxx, Sid6510.mode.xxx],							// 0x4f
+
 	[Sid6510.inst.bvc, Sid6510.mode.rel],							// 0x50
 	[Sid6510.inst.eor, Sid6510.mode.indy],							// 0x51
 	[Sid6510.inst.xxx, Sid6510.mode.xxx],							// 0x52
@@ -738,6 +743,7 @@ Sid6510.opcodes = new Array(
 	[Sid6510.inst.eor, Sid6510.mode.absx],							// 0x5d
 	[Sid6510.inst.lsr, Sid6510.mode.absx],							// 0x5e
 	[Sid6510.inst.xxx, Sid6510.mode.xxx],							// 0x5f
+
 	[Sid6510.inst.rts, Sid6510.mode.imp],							// 0x60
 	[Sid6510.inst.adc, Sid6510.mode.indx],							// 0x61
 	[Sid6510.inst.xxx, Sid6510.mode.xxx],							// 0x62
@@ -754,6 +760,7 @@ Sid6510.opcodes = new Array(
 	[Sid6510.inst.adc, Sid6510.mode.abs],							// 0x6d
 	[Sid6510.inst.ror, Sid6510.mode.abs],							// 0x6e
 	[Sid6510.inst.xxx, Sid6510.mode.xxx],							// 0x6f
+
 	[Sid6510.inst.bvs, Sid6510.mode.rel],							// 0x70
 	[Sid6510.inst.adc, Sid6510.mode.indy],							// 0x71
 	[Sid6510.inst.xxx, Sid6510.mode.xxx],							// 0x72
@@ -770,6 +777,7 @@ Sid6510.opcodes = new Array(
 	[Sid6510.inst.adc, Sid6510.mode.absx],							// 0x7d
 	[Sid6510.inst.ror, Sid6510.mode.absx],							// 0x7e
 	[Sid6510.inst.xxx, Sid6510.mode.xxx],							// 0x7f
+
 	[Sid6510.inst.xxx, Sid6510.mode.imm],							// 0x80
 	[Sid6510.inst.sta, Sid6510.mode.indx],							// 0x81
 	[Sid6510.inst.xxx, Sid6510.mode.xxx],							// 0x82
@@ -786,6 +794,7 @@ Sid6510.opcodes = new Array(
 	[Sid6510.inst.sta, Sid6510.mode.abs],							// 0x8d
 	[Sid6510.inst.stx, Sid6510.mode.abs],							// 0x8e
 	[Sid6510.inst.xxx, Sid6510.mode.xxx],							// 0x8f
+
 	[Sid6510.inst.bcc, Sid6510.mode.rel],							// 0x90
 	[Sid6510.inst.sta, Sid6510.mode.indy],							// 0x91
 	[Sid6510.inst.xxx, Sid6510.mode.xxx],							// 0x92
@@ -802,6 +811,7 @@ Sid6510.opcodes = new Array(
 	[Sid6510.inst.sta, Sid6510.mode.absx],							// 0x9d
 	[Sid6510.inst.xxx, Sid6510.mode.absx],							// 0x9e
 	[Sid6510.inst.xxx, Sid6510.mode.xxx],							// 0x9f
+
 	[Sid6510.inst.ldy, Sid6510.mode.imm],							// 0xa0
 	[Sid6510.inst.lda, Sid6510.mode.indx],							// 0xa1
 	[Sid6510.inst.ldx, Sid6510.mode.imm],							// 0xa2
@@ -818,6 +828,7 @@ Sid6510.opcodes = new Array(
 	[Sid6510.inst.lda, Sid6510.mode.abs],							// 0xad
 	[Sid6510.inst.ldx, Sid6510.mode.abs],							// 0xae
 	[Sid6510.inst.xxx, Sid6510.mode.xxx],							// 0xaf
+
 	[Sid6510.inst.bcs, Sid6510.mode.rel],							// 0xb0
 	[Sid6510.inst.lda, Sid6510.mode.indy],							// 0xb1
 	[Sid6510.inst.xxx, Sid6510.mode.xxx],							// 0xb2
@@ -834,6 +845,7 @@ Sid6510.opcodes = new Array(
 	[Sid6510.inst.lda, Sid6510.mode.absx],							// 0xbd
 	[Sid6510.inst.ldx, Sid6510.mode.absy],							// 0xbe
 	[Sid6510.inst.xxx, Sid6510.mode.xxx],							// 0xbf
+
 	[Sid6510.inst.cpy, Sid6510.mode.imm],							// 0xc0
 	[Sid6510.inst.cmp, Sid6510.mode.indx],							// 0xc1
 	[Sid6510.inst.xxx, Sid6510.mode.xxx],							// 0xc2
@@ -850,6 +862,7 @@ Sid6510.opcodes = new Array(
 	[Sid6510.inst.cmp, Sid6510.mode.abs],							// 0xcd
 	[Sid6510.inst.dec, Sid6510.mode.abs],							// 0xce
 	[Sid6510.inst.xxx, Sid6510.mode.xxx],							// 0xcf
+
 	[Sid6510.inst.bne, Sid6510.mode.rel],							// 0xd0
 	[Sid6510.inst.cmp, Sid6510.mode.indy],							// 0xd1
 	[Sid6510.inst.xxx, Sid6510.mode.xxx],							// 0xd2
@@ -866,6 +879,7 @@ Sid6510.opcodes = new Array(
 	[Sid6510.inst.cmp, Sid6510.mode.absx],							// 0xdd
 	[Sid6510.inst.dec, Sid6510.mode.absx],							// 0xde
 	[Sid6510.inst.xxx, Sid6510.mode.xxx],							// 0xdf
+
 	[Sid6510.inst.cpx, Sid6510.mode.imm],							// 0xe0
 	[Sid6510.inst.sbc, Sid6510.mode.indx],							// 0xe1
 	[Sid6510.inst.xxx, Sid6510.mode.xxx],							// 0xe2
@@ -882,6 +896,7 @@ Sid6510.opcodes = new Array(
 	[Sid6510.inst.sbc, Sid6510.mode.abs],							// 0xed
 	[Sid6510.inst.inc, Sid6510.mode.abs],							// 0xee
 	[Sid6510.inst.xxx, Sid6510.mode.xxx],							// 0xef
+
 	[Sid6510.inst.beq, Sid6510.mode.rel],							// 0xf0
 	[Sid6510.inst.sbc, Sid6510.mode.indy],							// 0xf1
 	[Sid6510.inst.xxx, Sid6510.mode.xxx],							// 0xf2
