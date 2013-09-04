@@ -52,7 +52,7 @@ function SidPlayer(sidFile, synth, cpu) {
 			if (samplesToNextFrame != null && samplesToNextFrame <= samplesRemaining) {
 				/* generate samplesToNextFrame samples, process frame and repeat */
 				var samplesToGenerate = Math.ceil(samplesToNextFrame);
-				console.log("next frame: " + samplesToNextFrame + ", remaining: " + samplesRemaining + ", offset: " + dataOffset + ", generate: " + samplesToGenerate);
+				//console.log("next frame: " + samplesToNextFrame + ", remaining: " + samplesRemaining + ", offset: " + dataOffset + ", generate: " + samplesToGenerate);
 				if (samplesToGenerate > 0) {
 					synth.generateIntoBuffer(samplesToGenerate, data, dataOffset);
 					dataOffset += samplesToGenerate * 2;
