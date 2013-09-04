@@ -11,7 +11,7 @@ function SidPlayer(sidFile, synth, cpu) {
 		sidFile.play_addr = (cpu.mem[0x0315] << 8) + cpu.mem[0x0314];
 	}
 
-
+	cpu.cpuJSR(sidFile.init_addr, sidFile.startsong);
 
 	// loads the next frame of dump data, setting the sid registers
 	// also handle end condition

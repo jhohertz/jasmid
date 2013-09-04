@@ -167,8 +167,7 @@ Sid6510.prototype.putaddr = function(mode, val) {
 			ad = this.getmem(this.pc++);
 			ad |= this.getmem(this.pc++) << 8;
 			ad2 = ad + this.y;
-			if ((ad2 & 0xff00) != (ad & 0xff00))
-				this.cycles++;
+			if ((ad2 & 0xff00) != (ad & 0xff00)) this.cycles++;
 			this.setmem(ad2, val);
 			return;
 		case Sid6510.mode.zp:
