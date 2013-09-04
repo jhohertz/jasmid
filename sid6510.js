@@ -89,7 +89,7 @@ Sid6510.prototype.getaddr = function(mode) {
 			return this.getmem(ad & 0xff);
 		case Sid6510.mode.indx:
 			this.cycles += 6;
-			ad = this.getmem(pc++);
+			ad = this.getmem(this.pc++);
 			ad += this.x;
 			ad2 = this.getmem(ad & 0xff);
 			ad++;
@@ -130,7 +130,7 @@ Sid6510.prototype.setaddr = function(mode, val) {
 			return;
 		case Sid6510.mode.zp:
 			this.cycles += 2;
-			ad = this.getmem(pc - 1);
+			ad = this.getmem(this.pc - 1);
 			this.setmem(ad, val);
 			return;
 		case Sid6510.mode.zpx:
