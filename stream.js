@@ -72,3 +72,25 @@ function Stream(str) {
 		'readVarInt': readVarInt
 	}
 }
+
+Stream.loadRemoteFile = function (path, callback) {
+	var fetch = new XMLHttpRequest();
+	fetch.open('GET', path);
+	if(fetch.overrideMimeType) fetch.overrideMimeType("text/plain; charset=x-user-defined");
+	if(fetch.responseType) fetch.responseType = "arraybuffer";
+	fetch.onreadystatechange = function() {
+		if(this.readyState == 4 && this.status == 200) {
+			/* munge response into a binary string */
+			var t = this.responseText || "" ;
+			var ff = [];
+			var mx = t.length;
+			var scc= String.fromCharCode;
+			for (var z = 0; z < mx; z++) {
+				ff[z] = scc(t.charCodeAt(z) & 255);
+			}
+			callback(ff.join(""));
+		}
+	}
+	fetch.send();
+}
+
