@@ -37,14 +37,11 @@ AudioPlayer.prototype.detectMode = function() {
 	}
 
 	// Fall back to creating flash player
-	var c = document.createElement('div');
-	c.innerHTML = '<embed type="application/x-shockwave-flash" id="da-swf" src="da.swf" width="8" height="8" allowScriptAccess="always" style="position: fixed; left:-10px;" />';
-	document.body.appendChild(c);
-	this.swf = document.getElementById('da-swf');
 	// other vars related to this backend
 	this.minBufferDuration = this.latency * 1000; /* refill buffer when there are only this many ms remaining */
 	this.bufferFillLength = this.latency * this.sampleRate;
 	this.mode = AudioPlayer.mode.flash;
+	this.flashInserted = false;
 	return this.mode;
 
 }
@@ -78,6 +75,7 @@ AudioPlayer.prototype.start = function() {
 			this.node.connect(this.webkitAudioContext.destination);
 			break;
 		case AudioPlayer.mode.flash:
+			this.flashInsert();
 			this.flashCheckReady();
 			break;
 	}
@@ -85,14 +83,15 @@ AudioPlayer.prototype.start = function() {
 
 AudioPlayer.prototype.firefoxCheckBuffer = function() {
 	if (this.buffer.length) {
-		var written = this.audioElement.mozWriteAudio(buffer);
+		var written = this.audioElement.mozWriteAudio(this.buffer);
 		this.buffer = this.buffer.slice(written);
 	}
-	if (this.buffer.length < minBufferLength && !this.generator.finished) {
+	if (this.buffer.length < this.minBufferLength && !this.generator.finished) {
 		this.buffer = this.buffer.concat(this.generator.generate(this.bufferFillLength));
 	}
 	if (!this.requestStop && (!this.generator.finished || this.buffer.length)) {
-		setTimeout(this.firefoxCheckBuffer, this.checkInterval);
+		var that = this;
+		setTimeout(function() { that.firefoxCheckBuffer() }, this.checkInterval);
 	}
 }
 
@@ -114,6 +113,17 @@ AudioPlayer.prototype.webkitProcess = function(e) {
 	
 }
 
+AudioPlayer.prototype.flashInsert = function() {
+	if(!this.flashInserted) {
+		this.flashInserted = true;
+		var c = document.createElement('div');
+		c.innerHTML = '<embed type="application/x-shockwave-flash" id="da-swf" src="da.swf" width="8" height="8" allowScriptAccess="always" style="position: fixed; left:-10px;" />';
+		//var bodynode = document.getElementsByTagName('body')[0];
+		document.body.appendChild(c);
+		this.swf = document.getElementById('da-swf');
+	}
+}
+
 AudioPlayer.prototype.flashWrite = function(data) {
 	var out = new Array(data.length);
 	for (var i = data.length-1; i != 0; i--) {
@@ -127,7 +137,8 @@ AudioPlayer.prototype.flashCheckBuffer = function() {
 		this.flashWrite(this.generator.generate(this.bufferFillLength));
 	}
 	if (!this.requestStop && !this.generator.finished) {
-		setTimeout(this.flashCheckBuffer, this.checkInterval);
+		var that = this;
+		setTimeout( function() { that.flashCheckBuffer(); }, this.checkInterval);
 	}
 }
 
@@ -135,7 +146,8 @@ AudioPlayer.prototype.flashCheckReady = function() {
 	if (this.swf.write) {
 		this.flashCheckBuffer();
 	} else {
-		setTimeout(this.flashCheckReady, 10);
+		var that = this;
+		setTimeout(function() { that.flashCheckReady(); }, 10);
 	}
 }
 
