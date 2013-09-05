@@ -39,8 +39,7 @@ function AudioPlayer(generator, opts) {
 	} else if (webkitAudio) {
 		// Uses Webkit Web Audio API if available
 		var context = new webkitAudio();
-		//sampleRate = context.sampleRate;
-		context.sampleRate = sampleRate;
+		sampleRate = context.sampleRate;
 		
 		var channelCount = 2;
 		var bufferSize = 4096*4; // Higher for less gitches, lower for less latency
