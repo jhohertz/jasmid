@@ -1,0 +1,27 @@
+<!DOCTYPE HTML>
+<html>
+	<head>
+		<script src="stream.js"></script>
+		<script src="midifile.js"></script>
+		<script src="replayer-new.js"></script>
+		<script src="synth-new.js"></script>
+		<script src="audioplayer.js"></script>
+		<script>
+			var audio = new AudioPlayer();
+
+			function play(file) {
+				Stream.loadRemoteFile(file, function(data) {
+					midiFile = MidiFile(data);
+					synth = new Synth(audio.sampleRate);
+					replayer = new Replayer(midiFile, synth);
+					audio.setGenerator(replayer);
+					audio.start();
+				})
+			}
+		</script>
+	</head>
+	<body>
+		<a href="javascript:void(play('minute_waltz.mid'))">Chopin - Waltz Op.61 (Minute Waltz)</a> |
+		<a href="javascript:void(play('rachmaninov3.mid'))">Rachmaninov - Piano Concerto No.3 (First movement)</a>
+	</body>
+</html>
