@@ -13,7 +13,7 @@
 			function play(file) {
 				Stream.loadRemoteFile(file, function(data) {
 					sidFile = SidFile(data);
-					synth = new SidSynth(44100, sidFile.mem);
+					synth = new SidSynth(audio.sampleRate, sidFile.mem);
 					cpu = new Sid6510(sidFile.mem, synth);
 					sidPlayer = SidPlayer(sidFile, synth, cpu);
 					audio.setGenerator(sidPlayer);

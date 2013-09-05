@@ -121,7 +121,7 @@ SidSynthOsc.prototype.sampleUpdate = function() {
 	if (this.wave & 0x02) {
 		var thisrefosc = this.sid.osc[this.refosc];
 		if (thisrefosc.counter < thisrefosc.freq) {
-			this.counter = thisrefosc.counter * this.freq / thisrefosc.freq;
+			this.counter = parseInt(thisrefosc.counter * this.freq / thisrefosc.freq);
 		}
 	}
 
@@ -132,17 +132,12 @@ SidSynthOsc.prototype.sampleUpdate = function() {
 	}
 	this.sawout = (this.counter >> 20) & 0xff;
 
-	//original: this.plsout = ((this.counter > this.pulse) - 1) && 0xff;
-	//this.plsout = (this.counter > this.pulse) ? 0xff : 0;
 	this.plsout = (this.counter > this.pulse) ? 0 : 0xff;
 
 	// generate noise waveform exactly as the SID does.
 	if ( this.noisepos != ( this.counter >> 23 ) ) {
-
 		this.noisepos = this.counter >> 23;
-
-		this.noiseval = 
-			(this.noiseval << 1) | 
+		this.noiseval = (this.noiseval << 1) | 
 			(SidSynth.get_bit(this.noiseval,22) ^ SidSynth.get_bit(this.noiseval,17));
 		this.noiseout = 
 			(SidSynth.get_bit(this.noiseval,22) << 7) |
@@ -172,7 +167,6 @@ SidSynthOsc.prototype.sampleUpdate = function() {
 	if (this.wave & 0x20) this.outv &= this.sawout;
 	if (this.wave & 0x40) this.outv &= this.plsout;
 	if (this.wave & 0x80) this.outv &= this.noiseout;
-
 
 	// now process the envelopes. the first thing about this is testing
 	// the gate bit and put the EG into attack or release phase if desired
@@ -238,8 +232,8 @@ function SidSynth(mix_frequency, memory) {
 	}
 
 	this.mix_freq = mix_frequency;	
-	this.freq_mul = 15872000 / this.mix_freq;
-	this.filt_mul = pFloat.convertFromFloat(21.5332031) / this.mix_freq;
+	this.freq_mul = parseInt(15872000 / this.mix_freq);
+	this.filt_mul = parseInt(pFloat.convertFromFloat(21.5332031) / this.mix_freq);
 
 	// these are used to calc pseudo constants based on mix_freq
 	var attackTimes = new Array(
@@ -315,16 +309,11 @@ function SidSynth(mix_frequency, memory) {
 
 };
 
-//SidSynth.SOMEPROP = const type val;
-//SidSynth.ENUMEXAMPLE = Object.freeze ({ monday: {}, tuesday: {}, ... });
-
-
 // generate count samples into buffer at offset
 SidSynth.prototype.generateIntoBuffer = function(count, buffer, offset) {
 	//console.log("SidSynth.generateIntoBuffer (count: " + count + ", offset: " + offset + ")");
 
 	// FIXME: this could be done in one pass. (No?)
-	// zero out buffer area (why?)
 	for (var i = offset; i < offset + count * 2; i++) {
 		buffer[i] = 0;
 	}
@@ -361,12 +350,8 @@ SidSynth.prototype.generateIntoBuffer = function(count, buffer, offset) {
 			// filtered channel and dont forget to blank out osc3 if desired
 			if ( v < 2 || this.filter.v3ena) {
 				if (thisosc.filter) {
-					//outf+=((float)osc[v].envval*(float)outv-0x8000000)/0x30000000;
-					//outf += ( ( (int)(outv-0x80) ) * osc[v].envval)>>22;
 					outf += ( (thisosc.outv - 0x80 ) * thisosc.envval) >> 22;
 				} else {
-					//outo+=((float)osc[v].envval*(float)outv-0x8000000)/0x30000000;
-					//outo+=(((int)(outv-0x80))*osc[v].envval)>>22;
 					outo += ( ( thisosc.outv - 0x80 ) * thisosc.envval) >> 22;
 				}
 			}
@@ -385,22 +370,15 @@ SidSynth.prototype.generateIntoBuffer = function(count, buffer, offset) {
 		// This filter sounds a lot like the 8580, as the low-quality, dirty
 		// sound of the 6581 is uuh too hard to achieve :)
 
-		//filter.h = outf - filter.b*filter.rez - filter.l;
 		this.filter.h = pFloat.convertFromInt(outf) - (this.filter.b >> 8) * this.filter.rez - this.filter.l;
-
-		//filter.b += filter.freq * filter.h;
 		this.filter.b += pFloat.multiply(this.filter.freq, this.filter.h);
-
-		//filter.l += filter.freq * filter.b;
 		this.filter.l += pFloat.multiply(this.filter.freq, this.filter.b);
 
 		outf = 0;
-
 		if (this.filter.l_ena) outf += pFloat.convertToInt(this.filter.l);
 		if (this.filter.b_ena) outf += pFloat.convertToInt(this.filter.b);
 		if (this.filter.h_ena) outf += pFloat.convertToInt(this.filter.h);
 
-		//var final_sample = (this.filter.vol * ( outo + outf ));
 		var final_sample = parseFloat(this.generateDigi(this.filter.vol * ( outo + outf ))) / 32768;
 		buffer[bp] = final_sample;
 		buffer[bp+1] = final_sample;

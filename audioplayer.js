@@ -6,7 +6,7 @@ function AudioPlayer(opts) {
 	this.generator = opts.generator || null;
 	this.latency = opts.latency || 1;
 	this.checkInterval = this.latency * 100 			/* in ms */
-	this.sampleRate = 44100; 				/* hard-coded in Flash player (and other places too!) */
+	this.sampleRate = 44100; 				/* hard-coded in Flash player*/
 	this.requestStop = false;
 	this.detectMode();
 }
@@ -29,7 +29,7 @@ AudioPlayer.prototype.detectMode = function() {
 	if (webkitAudio) {
 		this.mode = AudioPlayer.mode.webkit;
 		this.webkitAudioContext = new webkitAudio();
-		this.webkitAudioContext.sampleRate = this.sampleRate;
+		this.sampleRate = this.webkitAudioContext.sampleRate;
 		// other vars related to this backend
 		this.channelCount = 2;
 		this.bufferSize = 4096*4; // Higher for less gitches, lower for less latency

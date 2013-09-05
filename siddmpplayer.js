@@ -1,9 +1,11 @@
 function SidDmpPlayer(sidDmpFile, synth) {
 
-	var samplesPerFrame = 882;		// 50hz	dmp files only supported
+	//var samplesPerFrame = 882;		// 50hz	dmp files only supported
+        var samplesPerFrame = synth.mix_freq / 50
 
-	for (var i = 0; i < sidDmpFile.length; i++) {
-	}
+
+	//for (var i = 0; i < sidDmpFile.length; i++) {
+	//}
 	
 	var nextFrameNum = 0;
 	var samplesToNextFrame = 0;
@@ -13,7 +15,6 @@ function SidDmpPlayer(sidDmpFile, synth) {
 
 	function getNextFrame() {
 		var nextFrame = null;
-		var nextFrameIndex = null;
 
 		if (nextFrameNum < sidDmpFile.length) {
 			// have a frame to give

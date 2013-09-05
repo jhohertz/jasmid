@@ -1,6 +1,8 @@
 function SidPlayer(sidFile, synth, cpu) {
 
-	var samplesPerFrame = sidFile.speed ? 441 : 882;		// 0=50hz, 1=100hz
+	//var samplesPerFrame = sidFile.speed ? 441 : 882;		// 0=50hz, 1=100hz
+	var sidspeed = sidFile.speed ? 100 : 50;		// 0=50hz, 1=100hz
+	var samplesPerFrame = synth.mix_freq / sidspeed 
 	
 	var samplesToNextFrame = 0;
 	var play_active = true;
