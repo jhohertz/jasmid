@@ -1,6 +1,4 @@
 
-
-
 function AudioPlayer(opts) {
 	if (!opts) opts = {};
 	this.generator = opts.generator || null;

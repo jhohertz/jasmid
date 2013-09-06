@@ -77,6 +77,7 @@ function SineGenerator(freq, synth) {
 	this.period = this.synth.sampleRate / freq;
 	this.t = 0;
 }	
+
 SineGenerator.prototype.generate = function(buf, offset, count) {
 	for (; count; count--) {
 		var phase = this.t / this.period;
@@ -111,6 +112,7 @@ SquareGenerator.prototype.generate = function(buf, offset, count) {
 
 function ADSRGenerator(child, attackAmplitude, sustainAmplitude, attackTimeS, decayTimeS, releaseTimeS, synth) {
 	this.alive = true;
+	this.released = false;
 	this.child = child;
 	this.synth = synth;
 	this.attackAmplitude = attackAmplitude;
@@ -188,12 +190,4 @@ ADSRGenerator.prototype.generate = function(buf, offset, count) {
 		}
 	}
 }
-	
-
-
-
-
-
-
-
 

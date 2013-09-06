@@ -159,7 +159,7 @@ Replayer.prototype.handleEvent = function() {
 	
 Replayer.prototype.replay = function(audio) {
 	console.log('replay');
-	audio.write(generate(44100));
+	audio.write(generate(this.synth.sampleRate));
 	var that = this;
 	setTimeout(function() {that.replay(audio)}, 10);
 }
