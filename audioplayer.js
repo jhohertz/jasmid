@@ -12,17 +12,6 @@ function AudioPlayer(opts) {
 AudioPlayer.mode = Object.freeze({ firefox:{}, webkit:{}, flash:{} });
 
 AudioPlayer.prototype.detectMode = function() {
-	var audioElement = new Audio();
-	if (audioElement.mozSetup) {
-		this.mode = AudioPlayer.mode.firefox;
-		this.audioElement = audioElement;
-		audioElement.mozSetup(2, this.sampleRate); 	/* channels, sample rate */
-		// other vars related to this backend
-		this.buffer = []; /* data generated but not yet written */
-		this.minBufferLength = this.latency * 2 * this.sampleRate; /* refill buffer when there are only this many elements remaining */
-		this.bufferFillLength = Math.floor(this.latency * this.sampleRate);
-		return this.mode;
-	}
 	var webkitAudio = window.AudioContext || window.webkitAudioContext;
 	if (webkitAudio) {
 		this.mode = AudioPlayer.mode.webkit;
@@ -62,11 +51,8 @@ AudioPlayer.prototype.stop = function() {
 
 AudioPlayer.prototype.start = function() {
 	switch (this.mode) {
-		case AudioPlayer.mode.firefox:
-			this.firefoxCheckBuffer();
-			break;
 		case AudioPlayer.mode.webkit:
-			this.node = this.webkitAudioContext.createJavaScriptNode(this.bufferSize, 0, this.channelCount);
+			this.node = this.webkitAudioContext.createScriptProcessor(this.bufferSize, 0, this.channelCount);
 			var that = this;
 			this.node.onaudioprocess = function(e) { that.webkitProcess(e) };
 			// start
@@ -76,20 +62,6 @@ AudioPlayer.prototype.start = function() {
 			this.flashInsert();
 			this.flashCheckReady();
 			break;
-	}
-}
-
-AudioPlayer.prototype.firefoxCheckBuffer = function() {
-	if (this.buffer.length) {
-		var written = this.audioElement.mozWriteAudio(this.buffer);
-		this.buffer = this.buffer.slice(written);
-	}
-	if (this.buffer.length < this.minBufferLength && !this.generator.finished) {
-		this.buffer = this.buffer.concat(this.generator.generate(this.bufferFillLength));
-	}
-	if (!this.requestStop && (!this.generator.finished || this.buffer.length)) {
-		var that = this;
-		setTimeout(function() { that.firefoxCheckBuffer() }, this.checkInterval);
 	}
 }
 
